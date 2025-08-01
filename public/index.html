@@ -8,7 +8,7 @@
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 
     <style>
-        /* All CSS styles remain the same */
+        /* All CSS styles are correct and remain the same */
         :root {
             --color-bg: #111827;
             --color-card: #1f2937;
@@ -72,11 +72,7 @@
         .game-viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; z-index: 1000; display: flex; flex-direction: column; }
         .game-viewer-header { padding: 0.5rem; background-color: #1f2937; display: flex; justify-content: flex-end; flex-shrink: 0; }
         .game-viewer-iframe { flex-grow: 1; border: none; }
-        
-        /* Styles for TON Connect button */
-        #ton-connect-button {
-            margin-left: 1rem;
-        }
+        .header-right { display: flex; align-items: center; }
     </style>
 </head>
 <body>
@@ -88,9 +84,10 @@
 
     <script type="text/babel">
         const { useState, useEffect, useCallback, useMemo } = React;
+        const TonConnectUI = window.TonConnectUI.TonConnectUI; // Get constructor from global window object
 
         // --- All other components and hooks are the same ---
-        const useTelegram = () => { /* ... */
+        const useTelegram = () => { /* ... */ 
             const [tg, setTg] = useState(null);
             useEffect(() => {
                 if (window.Telegram && window.Telegram.WebApp) {
@@ -102,7 +99,7 @@
             }, []);
             return tg;
         };
-        const Icon = ({ name, className }) => { /* ... */ 
+        const Icon = ({ name, className }) => { /* ... */
             const iconSvgs = { 'coin': <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" /></svg>, 'spinner': <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, 'game': <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>, 'task': <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>, 'wallet': <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>, 'friends': <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197M15 11a4 4 0 110-5.292" /></svg>, };
             const element = iconSvgs[name]; if (!element) return null; return React.cloneElement(element, { className });
         };
@@ -113,11 +110,11 @@
             const SvgWheel = ({ segments }) => { const radius = 100; const getCoords = (percent) => [Math.cos(2 * Math.PI * percent) * radius, Math.sin(2 * Math.PI * percent) * radius]; const segmentAngle = 1 / segments.length; return ( <g transform="rotate(-90)"> {segments.map((segment, i) => { const [startX, startY] = getCoords(i * segmentAngle); const [endX, endY] = getCoords((i + 1) * segmentAngle); const path = `M ${startX} ${startY} A ${radius} ${radius} 0 0 1 ${endX} ${endY} L 0 0`; const textAngleInRadians = (i + 0.5) * segmentAngle * 2 * Math.PI; const textX = Math.cos(textAngleInRadians) * radius * 0.65; const textY = Math.sin(textAngleInRadians) * radius * 0.65; const textRotation = (textAngleInRadians * 180 / Math.PI) + 90; return ( <g key={i}> <path d={path} fill={i % 2 === 0 ? "var(--color-green)" : "var(--color-primary)"} /> <g transform={`rotate(${textRotation} ${textX} ${textY})`}> <text x={textX} y={textY} className="wheel-svg-text">{segment.label}</text> </g> </g> ); })} </g> ); };
             return ( <div className="card"> <h2 className="section-title">Daily Spin Wheel</h2> <div className="spin-wheel-container"> <div className="spin-pointer"></div> <div className="spin-wheel" style={{ transform: `rotate(${rotation}deg)` }}> <svg viewBox="-105 -105 210 210" width="280" height="280"><SvgWheel segments={segments} /></svg> </div> </div> <button onClick={handleSpin} disabled={spins <= 0 || isSpinning} className="button button-primary">{isSpinning ? 'Spinning...' : `Spin Now (${spins} left)`}</button> {result && (<div className="spin-result">You landed on: <span className="spin-result-value">{result.label}</span> {result.value > 0 && ` (+${result.value} Gold)`} </div>)} </div> );
         };
-        const GameSection = ({ launchGame }) => { /* ... */
+        const GameSection = ({ launchGame }) => { /* ... */ 
             const games = [ { name: 'Backgammon', icon: '🎲', url: 'https://www.247backgammon.org/' }, { name: 'Chess', icon: '♟️', url: 'https://www.chess.com/play/computer' }, { name: 'Snakes & Ladders', icon: '🐍', url: 'https://www.plays.org/snakes-and-ladders-multiplayer/' } ];
             return ( <div className="card"> <h2 className="section-title">Competitive Games</h2> <div className="item-list"> {games.map(game => ( <div key={game.name} className="list-item"> <div className="list-item-content"> <span className="list-item-icon">{game.icon}</span> <div className="list-item-details"> <p className="list-item-title">{game.name}</p> </div> </div> <button onClick={() => launchGame(game.url)} className="button button-green button-small">Play</button> </div> ))} </div> </div> );
         };
-        const TaskSection = ({ updateBalance, tasks, setTasks }) => { /* ... */
+        const TaskSection = ({ updateBalance, tasks, setTasks }) => { /* ... */ 
              const handleClaim = (taskId) => { const task = tasks.find(t => t.id === taskId); if (!task || task.completed) return; updateBalance(task.reward); setTasks(prevTasks => prevTasks.map(t => t.id === taskId ? {...t, completed: true} : t)); };
             return ( <div className="card"> <h2 className="section-title">Tasks & Missions</h2> <div className="item-list"> {tasks.map(task => ( <div key={task.id} className={`list-item ${task.completed ? 'list-item-completed' : ''}`}> <div className="list-item-details"> <p className="list-item-title">{task.title}</p> <p className="list-item-subtitle">Reward: {task.reward} Gold</p> </div> {task.completed ? <span className="button-done">Done</span> : <button onClick={() => handleClaim(task.id)} className="button button-secondary button-small">Claim</button>} </div> ))} </div> </div> );
         };
@@ -126,75 +123,62 @@
             const copyLink = () => { navigator.clipboard.writeText(inviteLink).then(() => { if(tg) tg.showAlert('Invite link copied!'); }); };
             return ( <div className="card"> <h2 className="section-title">Invite Friends</h2> <p style={{textAlign: 'center', color: 'var(--color-text-muted)'}}>Get an extra spin for each friend who joins!</p> <div className="invite-link-box"> <span className="invite-link-text">{inviteLink}</span> <button className="button button-primary button-small" onClick={copyLink}>Copy</button> </div> <div className="info-box"> <p style={{fontWeight: 'bold', fontSize: '1.2rem'}}>0 Friends</p> <p>Invited</p> </div> </div> );
         };
-        const GameViewer = ({ url, onClose }) => { /* ... */
+        const GameViewer = ({ url, onClose }) => { /* ... */ 
             return ( <div className="game-viewer"> <div className="game-viewer-header"> <button className="button button-small" style={{backgroundColor: "var(--color-red)"}} onClick={onClose}> Close Game </button> </div> <iframe className="game-viewer-iframe" src={url} title="Game"></iframe> </div> );
         };
-        
-        // ===================================================================
-        // == UPDATED WithdrawalSection with TON Connect
-        // ===================================================================
-        const WithdrawalSection = ({ tonConnectUI, wallet }) => {
+        const WithdrawalSection = ({ tonConnectUI, wallet }) => { /* ... */
              const [page, setPage] = useState('main');
              const VIP_WALLET_ADDRESS = "UQA0JhVw0w34-YQZpFxxY6dxFLL5HJOQYXIJOzD4GUFWvMVR"; // IMPORTANT: Replace
              const VIP_FEE_TON = 0.5;
-
              const handleVipPayment = () => {
                 if (!wallet) {
-                    alert("Please connect your wallet first!");
+                    tonConnectUI.openModal(); // Ask user to connect wallet if not connected
                     return;
                 }
-                const transaction = {
-                    validUntil: Math.floor(Date.now() / 1000) + 600, // 10 minutes
-                    messages: [
-                        {
-                            address: VIP_WALLET_ADDRESS,
-                            amount: (VIP_FEE_TON * 1_000_000_000).toString(),
-                        }
-                    ]
-                };
-                tonConnectUI.sendTransaction(transaction)
-                    .then(() => { alert("Transaction sent successfully!"); })
-                    .catch(err => { console.error(err); alert("Transaction failed or was cancelled."); });
+                const transaction = { validUntil: Math.floor(Date.now() / 1000) + 600, messages: [ { address: VIP_WALLET_ADDRESS, amount: (VIP_FEE_TON * 1_000_000_000).toString(), } ] };
+                tonConnectUI.sendTransaction(transaction).then(() => { alert("Transaction sent successfully!"); }).catch(err => { console.error(err); });
              };
-
              if (page === 'vip_info') {
                  return ( <div className="card" style={{textAlign: "center"}}> <h2 className="section-title">VIP Activation</h2> <p style={{color: "var(--color-text-muted)", margin: "0 auto 2rem auto", lineHeight: 1.6}}>Pay {VIP_FEE_TON} TON to activate your VIP status and unlock withdrawals.</p> <button className="button button-primary" onClick={handleVipPayment}>Pay with Wallet</button> <button className="button button-link" onClick={() => setPage('main')}>Back</button> </div> );
              }
              return ( <div className="card"> <h2 className="section-title">Withdrawals</h2> <div className="info-box"> <p>Free Withdrawal</p> <p style={{color: "var(--color-text-muted)", fontSize: "0.875rem"}}>Temporarily closed.</p> </div> <div className="info-box" style={{backgroundColor: "var(--color-primary-dark)"}}> <p style={{fontWeight: "bold"}}>VIP Withdrawal</p> <p style={{fontSize: "0.875rem"}}>Activate VIP to withdraw up to 30,000 Gold.</p> </div> <button className="button button-secondary" style={{marginTop: "1rem"}} onClick={() => setPage('vip_info')}>Activate VIP</button> </div> );
         };
         
-        // Wrapper for the main App to provide TON Connect context
-        const AppWrapper = () => {
-            // ===================================================================
-            // == IMPORTANT: Create a manifest.json file and host it online.
-            // == Then, replace the URL below with your manifest's URL.
-            // ===================================================================
-            const manifestUrl = 'https://gist.githubusercontent.com/GoldEhsan/30d8fd4152d808b7b71fc8347f5d7bce/raw/19f01e85fb5eb2fe7ac5e0949eabb5bbc8553415/manifest.json'; // Example manifest
-
-            const tonConnectUI = useMemo(() => new TonConnectUI.TonConnectUI({ manifestUrl }), []);
-            const [wallet, setWallet] = useState(null);
-
-            useEffect(() => {
-                // Subscribe to wallet connection status changes
-                const unsubscribe = tonConnectUI.onStatusChange(walletInfo => {
-                    setWallet(walletInfo);
-                });
-                return () => unsubscribe();
-            }, [tonConnectUI]);
-            
-            return <App tonConnectUI={tonConnectUI} wallet={wallet} />;
-        };
-
-        const App = ({ tonConnectUI, wallet }) => {
+        // ===================================================================
+        // == THE MAIN APP AND WRAPPER (Corrected Initialization)
+        // ===================================================================
+        const App = () => {
             const tg = useTelegram();
             const [user, setUser] = useState(null);
             const [balance, setBalance] = useState(1950);
             const [spins, setSpins] = useState(3);
             const [tasks, setTasks] = useState([ { id: 1, title: 'Win 3 Games', reward: 100, completed: false }, { id: 2, title: 'Join news channel', reward: 500, completed: false } ]);
-            const [activeTab, setActiveTab] = useState('withdraw');
+            const [activeTab, setActiveTab] = useState('spin');
             const [activeGameUrl, setActiveGameUrl] = useState(null);
+            
+            // This state holds the single instance of TonConnectUI
+            const [tonConnectUI, setTonConnectUI] = useState(null);
+            const [wallet, setWallet] = useState(null);
 
-            useEffect(() => { if (tg) setUser(tg.initDataUnsafe?.user || { id: '12345', first_name: 'Guest' }); }, [tg]);
+            useEffect(() => {
+                if (tg) setUser(tg.initDataUnsafe?.user || { id: '12345', first_name: 'Guest' });
+                
+                // Initialize TonConnectUI only once
+                const tc_instance = new TonConnectUI({
+                    manifestUrl: 'https://gist.githubusercontent.com/siandree/036b236b25ac31f1d95361c8a1e80749/raw/b153b179373977593f009f4719623e9a7e80064f/gistfile1.txt', // Replace with your manifest URL
+                    buttonRootId: 'ton-connect-button-container'
+                });
+                
+                // Subscribe to wallet changes
+                const unsubscribe = tc_instance.onStatusChange(walletInfo => {
+                    setWallet(walletInfo);
+                });
+                
+                setTonConnectUI(tc_instance);
+
+                // Cleanup subscription on component unmount
+                return () => unsubscribe();
+            }, []);
 
             const updateBalance = useCallback((amount) => setBalance(prev => prev + amount), []);
             const launchGame = (url) => { updateBalance(-10); setActiveGameUrl(url); };
@@ -217,14 +201,17 @@
                             <header className="header">
                                 <div className="header-left">
                                     <h1 className="header-title">GoldCoin</h1>
-                                    <div className="balance-display">
+                                    <p className="header-subtitle">Welcome, {user?.first_name || ''}</p>
+                                </div>
+                                <div className="header-right">
+                                     <div className="balance-display">
                                         <Icon name="coin" className="balance-icon" />
                                         <span className="balance-amount">{balance.toLocaleString()}</span>
                                     </div>
+                                    <div id="ton-connect-button-container"></div>
                                 </div>
-                                <div id="ton-connect-button"></div>
                             </header>
-                            <main>{tabContent[activeTab]}</main>
+                            <main>{tonConnectUI && tabContent[activeTab]}</main>
                         </div>
                         <div className="footer-spacer"></div>
                         <footer className="footer">
@@ -241,16 +228,10 @@
                 </React.Fragment>
             );
         };
-        
-        // This mounts the TON Connect UI button to the designated div
-        const tonConnectUI_instance = new TonConnectUI.TonConnectUI({
-            manifestUrl: 'https://gist.githubusercontent.com/siandree/036b236b25ac31f1d95361c8a1e80749/raw/b153b179373977593f009f4719623e9a7e80064f/gistfile1.txt',
-            buttonRootId: 'ton-connect-button'
-        });
 
         const container = document.getElementById('root');
         const root = ReactDOM.createRoot(container);
-        root.render(<AppWrapper />);
+        root.render(<App />);
     </script>
 </body>
 </html>
