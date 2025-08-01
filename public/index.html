@@ -44,6 +44,7 @@
         .button-secondary { background-color: var(--color-secondary); color: white; }
         .button-green { background-color: var(--color-green); color: white; }
         .button-small { padding: 0.5rem 1rem; font-size: 0.875rem; width: auto; flex-shrink: 0; }
+        .button-link { background: none; box-shadow: none; color: var(--color-text-muted); width: auto; margin-top: 1rem; }
         .button-done { padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 700; background-color: #16a34a; color: white; border-radius: 0.5rem; }
 
         /* Daily Spin Section */
@@ -66,7 +67,7 @@
 
         /* Withdraw & Friends Section */
         .info-box { background-color: var(--color-card-light); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; text-align: center; }
-        .info-box p { margin: 0; }
+        .info-box p { margin: 0; line-height: 1.5; }
         .invite-link-box { background-color: var(--color-bg); padding: 0.75rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center; margin: 1rem 0; }
         .invite-link-text { color: var(--color-green); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -91,11 +92,7 @@
     <script type="text/babel">
         const { useState, useEffect, useCallback, useMemo } = React;
 
-        // --- MOCK API & CONFIG ---
-        const BOT_LINK = "https://t.me/Gcoin_ton_bot"; // Replace with your bot link
-        const generateInviteLink = (userId) => `${BOT_LINK}?start=${userId}`;
-
-        const useTelegram = () => {
+        const useTelegram = () => { /* ... same as before ... */ 
             const [tg, setTg] = useState(null);
             useEffect(() => {
                 if (window.Telegram && window.Telegram.WebApp) {
@@ -107,8 +104,7 @@
             }, []);
             return tg;
         };
-        
-        const Icon = ({ name, className }) => { /* Icon component code remains the same */ 
+        const Icon = ({ name, className }) => { /* ... same as before ... */
             const icons = {
                 'coin': <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" /></svg>,
                 'spinner': <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
@@ -130,7 +126,7 @@
                 if (spins <= 0 || isSpinning) return;
                 if (tg) tg.HapticFeedback.impactOccurred('medium');
                 setIsSpinning(true); setResult(null); setSpins(prev => prev - 1);
-                const spinAngle = Math.floor(Math.random() * 360) + 360 * 6; // More spins
+                const spinAngle = Math.floor(Math.random() * 360) + 360 * 6;
                 const newRotation = rotation + spinAngle;
                 setRotation(newRotation);
                 setTimeout(() => {
@@ -146,7 +142,8 @@
                     setIsSpinning(false);
                 }, 4000);
             };
-
+            
+            // This SvgWheel component is corrected to display text upright
             const SvgWheel = ({ segments }) => {
                 const radius = 100;
                 const getCoords = (percent) => [Math.cos(2 * Math.PI * percent) * radius, Math.sin(2 * Math.PI * percent) * radius];
@@ -157,15 +154,19 @@
                         {segments.map((segment, i) => {
                             const [startX, startY] = getCoords(i * segmentAngle);
                             const [endX, endY] = getCoords((i + 1) * segmentAngle);
-                            const textAngle = ((i + 0.5) * segmentAngle) * 360;
-                            const [textX, textY] = getCoords((i + 0.5) * segmentAngle * 0.7);
                             const path = `M ${startX} ${startY} A ${radius} ${radius} 0 0 1 ${endX} ${endY} L 0 0`;
+                            
+                            const textAngleInRadians = (i + 0.5) * segmentAngle * 2 * Math.PI;
+                            const textX = Math.cos(textAngleInRadians) * radius * 0.65;
+                            const textY = Math.sin(textAngleInRadians) * radius * 0.65;
+                            const textRotation = (textAngleInRadians * 180 / Math.PI) + 90;
+                            
                             return (
                                 <g key={i}>
                                     <path d={path} fill={i % 2 === 0 ? "var(--color-green)" : "var(--color-primary)"} />
-                                    <text x={textX} y={textY} transform={`rotate(${textAngle + 90} ${textX} ${textY})`} className="wheel-svg-text">
-                                        {segment.label}
-                                    </text>
+                                    <g transform={`rotate(${textRotation} ${textX} ${textY})`}>
+                                        <text x={textX} y={textY} className="wheel-svg-text">{segment.label}</text>
+                                    </g>
                                 </g>
                             );
                         })}
@@ -173,37 +174,32 @@
                 );
             };
 
-            return (
-                <div className="card">
-                    <h2 className="section-title">Daily Spin Wheel</h2>
-                    <div className="spin-wheel-container">
-                        <div className="spin-pointer"></div>
-                        <div className="spin-wheel" style={{ transform: `rotate(${rotation}deg)` }}>
-                            <svg viewBox="-105 -105 210 210" width="280" height="280">
-                                <SvgWheel segments={segments} />
-                            </svg>
-                        </div>
-                    </div>
-                    <button onClick={handleSpin} disabled={spins <= 0 || isSpinning} className="button button-primary">
-                        {isSpinning ? 'Spinning...' : `Spin Now (${spins} left)`}
-                    </button>
-                    {result && (
-                        <div className="spin-result">
-                            You landed on: <span className="spin-result-value">{result.label}</span>
-                            {result.value > 0 && ` (+${result.value} Gold)`}
-                        </div>
-                    )}
-                </div>
-            );
+            return ( <div className="card"> <h2 className="section-title">Daily Spin Wheel</h2> <div className="spin-wheel-container"> <div className="spin-pointer"></div> <div className="spin-wheel" style={{ transform: `rotate(${rotation}deg)` }}> <svg viewBox="-105 -105 210 210" width="280" height="280"><SvgWheel segments={segments} /></svg> </div> </div> <button onClick={handleSpin} disabled={spins <= 0 || isSpinning} className="button button-primary">{isSpinning ? 'Spinning...' : `Spin Now (${spins} left)`}</button> {result && (<div className="spin-result">You landed on: <span className="spin-result-value">{result.label}</span> {result.value > 0 && ` (+${result.value} Gold)`} </div>)} </div> );
         };
 
         const GameSection = ({ balance, updateBalance, tg }) => {
             const games = [{ name: 'Backgammon', icon: '🎲' }, { name: 'Chess', icon: '♟️' }];
-            const findMatch = (game) => { if(tg) tg.showAlert(`Starting a game of ${game.name}...`) };
+            const findMatch = (game) => {
+                if (balance < 10) {
+                    if (tg) tg.showAlert("You need at least 10 Gold to play.");
+                    return;
+                }
+                updateBalance(-10);
+                if (tg) tg.showPopup({ title: "Matchmaking", message: `Finding a ${game.name} opponent...` });
+                setTimeout(() => {
+                    const isWin = Math.random() > 0.5;
+                    if (isWin) {
+                        updateBalance(20);
+                        if (tg) tg.showAlert('You won! +20 Gold');
+                    } else {
+                        if (tg) tg.showAlert('You lost! -10 Gold');
+                    }
+                }, 3000);
+            };
             return ( <div className="card"> <h2 className="section-title">Competitive Games</h2> <div className="item-list"> {games.map(game => ( <div key={game.name} className="list-item"> <div className="list-item-content"> <span className="list-item-icon">{game.icon}</span> <div className="list-item-details"> <p className="list-item-title">{game.name}</p> </div> </div> <button onClick={() => findMatch(game)} className="button button-green button-small">Play (10)</button> </div> ))} </div> </div> );
         };
         
-        const TaskSection = ({ updateBalance, tasks, setTasks }) => {
+        const TaskSection = ({ updateBalance, tasks, setTasks }) => { /* ... same as before, no bugs reported ... */
             const handleClaim = (taskId) => {
                 const task = tasks.find(t => t.id === taskId);
                 if (!task || task.completed) return;
@@ -214,17 +210,19 @@
         };
 
         const WithdrawalSection = () => {
-             return ( <div className="card"> <h2 className="section-title">Withdrawals</h2> <div className="info-box"> <p>Free Withdrawal</p> <p style={{color: "var(--color-text-muted)", fontSize: "0.875rem"}}>Temporarily closed.</p> </div> <div className="info-box" style={{backgroundColor: "var(--color-primary-dark)"}}> <p style={{fontWeight: "bold"}}>VIP Withdrawal</p> <p style={{fontSize: "0.875rem"}}>Activate VIP to withdraw up to 30,000 Gold.</p> </div> <button className="button button-secondary" style={{marginTop: "1rem"}}>Activate VIP</button> </div> );
+             const [page, setPage] = useState('main'); // Internal state for navigation
+             if (page === 'vip_info') {
+                 return ( <div className="card" style={{textAlign: "center"}}> <h2 className="section-title">VIP Activation</h2> <p style={{color: "var(--color-text-muted)", margin: "0 auto 2rem auto"}}>Pay 0.5 TON to activate your VIP status and unlock withdrawals.</p> <button className="button button-primary">Pay with Tonkeeper</button> <button className="button button-link" onClick={() => setPage('main')}>Back</button> </div> );
+             }
+             return ( <div className="card"> <h2 className="section-title">Withdrawals</h2> <div className="info-box"> <p>Free Withdrawal</p> <p style={{color: "var(--color-text-muted)", fontSize: "0.875rem"}}>Temporarily closed.</p> </div> <div className="info-box" style={{backgroundColor: "var(--color-primary-dark)"}}> <p style={{fontWeight: "bold"}}>VIP Withdrawal</p> <p style={{fontSize: "0.875rem"}}>Activate VIP to withdraw up to 30,000 Gold.</p> </div> <button className="button button-secondary" style={{marginTop: "1rem"}} onClick={() => setPage('vip_info')}>Activate VIP</button> </div> );
         };
 
-        const FriendSection = ({ tg, user }) => {
-            const inviteLink = user ? generateInviteLink(user.id) : 'Loading...';
+        const FriendSection = ({ tg, user }) => { /* ... same as before, no bugs reported ... */
+            const inviteLink = user ? `https://t.me/YourBot?start=${user.id}` : 'Loading...';
             const copyLink = () => {
-                navigator.clipboard.writeText(inviteLink).then(() => {
-                    if(tg) tg.showAlert('Invite link copied!');
-                });
+                navigator.clipboard.writeText(inviteLink).then(() => { if(tg) tg.showAlert('Invite link copied!'); });
             };
-            return ( <div className="card"> <h2 className="section-title">Invite Friends</h2> <p style={{textAlign: 'center', color: 'var(--color-text-muted)'}}>Get an extra spin for each friend who joins!</p> <div className="invite-link-box"> <span className="invite-link-text">{inviteLink}</span> <button className="button button-primary button-small" onClick={copyLink}>Copy</button> </div> <div className="info-box"> <p style={{fontWeight: 'bold', fontSize: '1.2rem'}}>5 Friends</p> <p>Invited</p> </div> </div> );
+            return ( <div className="card"> <h2 className="section-title">Invite Friends</h2> <p style={{textAlign: 'center', color: 'var(--color-text-muted)'}}>Get an extra spin for each friend who joins!</p> <div className="invite-link-box"> <span className="invite-link-text">{inviteLink}</span> <button className="button button-primary button-small" onClick={copyLink}>Copy</button> </div> <div className="info-box"> <p style={{fontWeight: 'bold', fontSize: '1.2rem'}}>0 Friends</p> <p>Invited</p> </div> </div> );
         };
 
         const App = () => {
@@ -232,7 +230,7 @@
             const [user, setUser] = useState(null);
             const [balance, setBalance] = useState(1950);
             const [spins, setSpins] = useState(3);
-            const [tasks, setTasks] = useState([ { id: 1, title: 'Win 3 Games', reward: 100, completed: false }, { id: 2, title: 'Join news channel', reward: 500, completed: false }, { id: 3, title: 'Connect Tonkeeper', reward: 100, completed: false } ]);
+            const [tasks, setTasks] = useState([ { id: 1, title: 'Win 3 Games', reward: 100, completed: false }, { id: 2, title: 'Join news channel', reward: 500, completed: false } ]);
             const [activeTab, setActiveTab] = useState('spin');
 
             useEffect(() => {
@@ -255,14 +253,8 @@
                 <React.Fragment>
                     <div className="app-container">
                         <header className="header">
-                            <div>
-                                <h1 className="header-title">GoldCoin</h1>
-                                <p className="header-subtitle">Welcome, {user?.first_name || ''}</p>
-                            </div>
-                            <div className="balance-display">
-                                <Icon name="coin" className="balance-icon" />
-                                <span className="balance-amount">{balance.toLocaleString()}</span>
-                            </div>
+                            <div> <h1 className="header-title">GoldCoin</h1> <p className="header-subtitle">Welcome, {user?.first_name || ''}</p> </div>
+                            <div className="balance-display"> <Icon name="coin" className="balance-icon" /> <span className="balance-amount">{balance.toLocaleString()}</span> </div>
                         </header>
                         <main>{tabContent[activeTab]}</main>
                     </div>
