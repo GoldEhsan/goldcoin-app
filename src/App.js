@@ -210,7 +210,13 @@ const GameSection = ({ balance, updateBalance, tg }) => {
         try {
             const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
             const payload = { contents: chatHistory };
-            const apiKey = "";
+            // TODO: Replace with your actual Gemini API key
+            const apiKey = "YOUR_GEMINI_API_KEY";
+            if (apiKey === "YOUR_GEMINI_API_KEY") {
+                setStrategy("Please add your Gemini API key in App.js to use this feature.");
+                setIsFetchingStrategy(false);
+                return;
+            }
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -321,20 +327,14 @@ const TaskRequestForm = ({ tg, user, onClose }) => {
     );
 };
 
-const TaskSection = ({ updateBalance, tg, invitedFriendsCount, setConnectedWallet, connectedWallet, user }) => {
-    const [tasks, setTasks] = useState([
-        { id: 1, title: 'Win 3 Games', reward: 100, completed: false, type: 'normal' },
-        { id: 2, title: 'Invite 5 friends', reward: 200, completed: false, type: 'invite' },
-        { id: 3, title: 'Join our news channel', reward: 500, completed: false, type: 'join', link: 'https://t.me/GCoin_news' },
-        { id: 4, title: 'Connect your Tonkeeper wallet', reward: 100, completed: !!connectedWallet, type: 'connect', tip: 'Make sure to connect a wallet that is linked to Blum.' }
-    ]);
+const TaskSection = ({ tasks, setTasks, updateBalance, tg, invitedFriendsCount, setConnectedWallet, connectedWallet, user }) => {
     const [showRequestForm, setShowRequestForm] = useState(false);
 
     useEffect(() => {
-        setTasks(prevTasks => prevTasks.map(task => 
+        setTasks(prevTasks => prevTasks.map(task =>
             task.type === 'connect' ? { ...task, completed: !!connectedWallet } : task
         ));
-    }, [connectedWallet]);
+    }, [connectedWallet, setTasks]);
 
     const handleClaim = (taskId) => {
         const task = tasks.find(t => t.id === taskId);
@@ -348,7 +348,7 @@ const TaskSection = ({ updateBalance, tg, invitedFriendsCount, setConnectedWalle
         if (task.type === 'join' && task.link) {
             if (tg) tg.openLink(task.link); else window.open(task.link, '_blank');
         }
-        
+
         if (task.type === 'connect') {
             const tonkeeperUrl = 'tonkeeper://';
             setTimeout(() => {
@@ -368,7 +368,7 @@ const TaskSection = ({ updateBalance, tg, invitedFriendsCount, setConnectedWalle
             document.addEventListener('visibilitychange', handleVisibilityChange);
             window.location.href = tonkeeperUrl;
         }
-        
+
         updateBalance(task.reward);
         setTasks(tasks.map(t => t.id === taskId ? {...t, completed: true} : t));
         if (tg && task.type !== 'connect') {
@@ -630,18 +630,41 @@ export default function App() {
     const [vipData, setVipData] = useState({ monthlyLimit: 30000, unlockedDaily: 0, withdrawnThisMonth: 0 });
     const [invitedFriendsCount, setInvitedFriendsCount] = useState(0);
     const [connectedWallet, setConnectedWallet] = useState(null);
+    const [tasks, setTasks] = useState([
+        { id: 1, title: 'Win 3 Games', reward: 100, completed: false, type: 'normal' },
+        { id: 2, title: 'Invite 5 friends', reward: 200, completed: false, type: 'invite' },
+        { id: 3, title: 'Join our news channel', reward: 500, completed: false, type: 'join', link: 'https://t.me/GCoin_news' },
+        { id: 4, title: 'Connect your Tonkeeper wallet', reward: 100, completed: false, type: 'connect', tip: 'Make sure to connect a wallet that is linked to Blum.' }
+    ]);
 
     useEffect(() => {
-        if (tg) {
-            const telegramUser = tg.initDataUnsafe?.user;
-            if (telegramUser) {
-                setUser(telegramUser);
-            } else {
-                // Fallback for testing in a browser
-                setUser({ id: '123456789', first_name: 'Browser' });
+        const telegramUser = window.Telegram?.WebApp?.initDataUnsafe?.user || { id: '123456789', first_name: 'Browser' };
+        setUser(telegramUser);
+
+        const fetchUserData = async () => {
+            if (!telegramUser.id) return;
+
+            try {
+                const response = await fetch(`http://localhost:3001/api/user/${telegramUser.id}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                setBalance(data.balance);
+                setSpins(data.spins);
+                setIsVip(data.isVip);
+                // Now this will correctly update the state in the App component
+                setTasks(data.tasks);
+            } catch (error) {
+                console.error("Could not fetch user data:", error);
+                // Optionally, set some default state or show an error message
+                setBalance(500); // Default balance on error
+                setSpins(1);
             }
-        }
-    }, [tg]);
+        };
+
+        fetchUserData();
+    }, []);
 
     const updateBalance = useCallback((amount) => {
         setBalance(prev => prev + amount);
@@ -650,7 +673,7 @@ export default function App() {
     const tabs = {
         'spin': <DailySpin spins={spins} setSpins={setSpins} updateBalance={updateBalance} tg={tg} />,
         'games': <GameSection balance={balance} updateBalance={updateBalance} tg={tg} />,
-        'tasks': <TaskSection updateBalance={updateBalance} tg={tg} invitedFriendsCount={invitedFriendsCount} setConnectedWallet={setConnectedWallet} connectedWallet={connectedWallet} user={user} />,
+        'tasks': <TaskSection tasks={tasks} setTasks={setTasks} updateBalance={updateBalance} tg={tg} invitedFriendsCount={invitedFriendsCount} setConnectedWallet={setConnectedWallet} connectedWallet={connectedWallet} user={user} />,
         'withdraw': <WithdrawalSection balance={balance} isVip={isVip} setIsVip={setIsVip} vipData={vipData} setVipData={setVipData} tg={tg} connectedWallet={connectedWallet} user={user} updateBalance={updateBalance} />,
         'friends': <FriendSection setSpins={setSpins} tg={tg} user={user} invitedFriendsCount={invitedFriendsCount} setInvitedFriendsCount={setInvitedFriendsCount} />,
     };
