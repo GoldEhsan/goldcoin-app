@@ -8,35 +8,51 @@ function App() {
   const [loading, setLoading] = useState(true); // برای نمایش حالت لودینگ
 
   // ** این تابع اطلاعات را هنگام باز شدن برنامه از سرور می‌گیرد **
-  useEffect(() => {
+ // این کد را جایگزین useEffect فعلی خود کنید
+ useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // منتظر می‌مانیم تا آبجکت تلگرام آماده شود
-        await new Promise(resolve => setTimeout(resolve, 100)); 
-        
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        
-        const currentUser = tg.initDataUnsafe?.user;
-        if (currentUser) {
-          setUser(currentUser);
-          const response = await fetch(`/api/user-profile/${currentUser.id}`);
-          const data = await response.json();
+        // بررسی می‌کنیم که اسکریپت تلگرام بارگذاری شده باشد
+        if (window.Telegram && window.Telegram.WebApp) {
+          const tg = window.Telegram.WebApp;
+          tg.ready(); // به تلگرام اطلاع می‌دهیم که برنامه آماده است
+          
+          const currentUser = tg.initDataUnsafe?.user;
 
-          if (data) {
-            setBalance(data.balance);
-            setSpins(data.spins);
+          if (currentUser) {
+            // اگر کاربر شناسایی شد، اطلاعات پروفایل او را از سرور می‌گیریم
+            console.log("Fetching data for user:", currentUser.id); // برای دیباگ کردن
+            const response = await fetch(`/api/user-profile/${currentUser.id}`);
+            
+            if (!response.ok) {
+              throw new Error(`Server responded with status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data) {
+              // وضعیت برنامه را با اطلاعات دریافتی از دیتابیس آپدیت می‌کنیم
+              setBalance(data.balance);
+              setSpins(data.spins);
+              setUser(currentUser); // اطلاعات کاربر را ذخیره می‌کنیم
+            }
+          } else {
+            console.log("Could not find Telegram user data.");
+            setUser({ first_name: 'Guest' }); // اگر کاربر شناسایی نشد، مهمان نمایش بده
           }
+        } else {
+          console.error("Telegram WebApp script not loaded.");
+          setUser({ first_name: 'Guest' });
         }
       } catch (error) {
         console.error("Failed to fetch user data:", error);
       } finally {
-        setLoading(false); // پایان حالت لودینگ
+        setLoading(false); // حالت لودینگ را تمام می‌کنیم
       }
     };
 
     fetchUserData();
-  }, []); // [] یعنی این تابع فقط یک بار هنگام باز شدن برنامه اجرا می‌شود
+  }, []); // [] یعنی این کد فقط یک بار هنگام شروع برنامه اجرا می‌شود
 
 
   // ** این تابع اطلاعات جدید را در سرور ذخیره می‌کند **
