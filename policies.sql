@@ -8,7 +8,7 @@
 
 -- 1. Enable RLS on all tables (if not already enabled)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.game_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gameprofiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 
 -- 2. Create policies to allow all actions for now.
@@ -20,9 +20,9 @@ CREATE POLICY "Enable all actions on users"
   USING (true)
   WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Enable all actions on game_profiles" ON public.game_profiles;
-CREATE POLICY "Enable all actions on game_profiles"
-  ON public.game_profiles FOR ALL
+DROP POLICY IF EXISTS "Enable all actions on gameprofiles" ON public.gameprofiles;
+CREATE POLICY "Enable all actions on gameprofiles"
+  ON public.gameprofiles FOR ALL
   USING (true)
   WITH CHECK (true);
 
