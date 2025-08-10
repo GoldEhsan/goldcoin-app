@@ -48,7 +48,7 @@ const Icon = ({ name, className }) => {
 
 // --- MAIN SECTIONS ---
 
-const DailySpin = ({ spins, setSpins, updateBalance, tg }) => {
+const DailySpin = ({ spins, updateSpins, updateBalance, tg }) => {
     const segments = useMemo(() => [
         { label: '10', value: 10, type: 'gold' }, 
         { label: '20', value: 20, type: 'gold' }, 
@@ -70,7 +70,7 @@ const DailySpin = ({ spins, setSpins, updateBalance, tg }) => {
         if (tg) tg.HapticFeedback.impactOccurred('medium');
         setIsSpinning(true);
         setResult(null);
-        setSpins(prev => prev - 1);
+        updateSpins(spins - 1); // Use the new function to update spins and persist to DB
 
         const spinAngle = Math.floor(Math.random() * 360) + 360 * 5;
         const newRotation = rotation + spinAngle;
@@ -666,12 +666,35 @@ export default function App() {
         fetchUserData();
     }, []);
 
+    const updateUserData = useCallback(async (dataToUpdate) => {
+        if (!user?.id) return;
+
+        try {
+            await fetch(`http://localhost:3001/api/user/${user.id}/profile`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataToUpdate),
+            });
+        } catch (error) {
+            console.error('Failed to save user data:', error);
+        }
+    }, [user]);
+
     const updateBalance = useCallback((amount) => {
-        setBalance(prev => prev + amount);
-    }, []);
+        setBalance(prev => {
+            const newBalance = prev + amount;
+            updateUserData({ balance: newBalance });
+            return newBalance;
+        });
+    }, [updateUserData]);
+
+    const updateSpins = useCallback((newSpins) => {
+        setSpins(newSpins);
+        updateUserData({ spins: newSpins });
+    }, [updateUserData]);
 
     const tabs = {
-        'spin': <DailySpin spins={spins} setSpins={setSpins} updateBalance={updateBalance} tg={tg} />,
+        'spin': <DailySpin spins={spins} updateSpins={updateSpins} updateBalance={updateBalance} tg={tg} />,
         'games': <GameSection balance={balance} updateBalance={updateBalance} tg={tg} />,
         'tasks': <TaskSection tasks={tasks} setTasks={setTasks} updateBalance={updateBalance} tg={tg} invitedFriendsCount={invitedFriendsCount} setConnectedWallet={setConnectedWallet} connectedWallet={connectedWallet} user={user} />,
         'withdraw': <WithdrawalSection balance={balance} isVip={isVip} setIsVip={setIsVip} vipData={vipData} setVipData={setVipData} tg={tg} connectedWallet={connectedWallet} user={user} updateBalance={updateBalance} />,
@@ -692,7 +715,7 @@ export default function App() {
                 <header className="bg-gray-800 rounded-xl p-3 mb-4 shadow-lg flex justify-between items-center">
                     <div>
                         <h1 className="text-xl font-bold text-yellow-400">GoldCoin</h1>
-                        <p className="text-xs text-gray-400 mt-1">Welcome, {user?.first_name || 'Guest'}</p>
+                        <p className="text-xs text-gray-400 mt-1">Welcome, {user?.first_name || user?.id || 'Guest'}</p>
                     </div>
                     <div className="text-right">
                         <div className="flex items-center justify-end">

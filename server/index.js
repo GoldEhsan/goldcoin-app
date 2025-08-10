@@ -106,6 +106,60 @@ app.get('/api/user/:userId', async (req, res) => {
   }
 });
 
+// PATCH endpoint to update a user's game profile (balance, spins)
+app.patch('/api/user/:userId/profile', async (req, res) => {
+  const { userId: telegram_id } = req.params;
+  const { balance, spins } = req.body;
+
+  if (!telegram_id) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
+
+  try {
+    // 1. Find the user by their Telegram ID to get the associated GameProfile ID
+    const { data: user, error: userError } = await supabase
+      .from('Users')
+      .select('id, GameProfiles ( id )')
+      .eq('telegram_id', telegram_id)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const gameProfileId = user.GameProfiles[0]?.id;
+    if (!gameProfileId) {
+      return res.status(404).json({ error: 'Game profile not found for this user' });
+    }
+
+    // 2. Create an object with only the fields to be updated
+    const updates = {};
+    if (balance !== undefined) updates.balance = balance;
+    if (spins !== undefined) updates.spins = spins;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No update data provided' });
+    }
+
+    // 3. Update the specific row in the GameProfiles table
+    const { data: updatedProfile, error: updateError } = await supabase
+      .from('GameProfiles')
+      .update(updates)
+      .eq('id', gameProfileId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    console.log(`Updated profile for user ${telegram_id}:`, updatedProfile);
+    res.status(200).json(updatedProfile);
+
+  } catch (error) {
+    console.error(`Error updating profile for user ${telegram_id}:`, error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // --- SERVER STARTUP ---
 // Vercel handles the server listening, so we just need to export the app.
