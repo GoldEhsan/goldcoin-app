@@ -645,7 +645,7 @@ export default function App() {
             if (!telegramUser.id) return;
 
             try {
-                const response = await fetch(`http://localhost:3001/api/user/${telegramUser.id}`);
+                const response = await fetch(`/api/user/${telegramUser.id}`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -670,7 +670,7 @@ export default function App() {
         if (!user?.id) return;
 
         try {
-            await fetch(`http://localhost:3001/api/user/${user.id}/profile`, {
+            await fetch(`/api/user/${user.id}/profile`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToUpdate),
