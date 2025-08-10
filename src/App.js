@@ -669,7 +669,7 @@ export default function App() {
         }
     }, [tg]); // This effect now correctly depends on the tg object
 
-    const updateUserData = async (dataToUpdate) => {
+    const updateUserData = useCallback(async (dataToUpdate) => {
         if (!user || !user.id) {
             console.log("FRONTEND LOG: updateUserData called, but user is not available. Aborting.");
             return;
@@ -691,22 +691,22 @@ export default function App() {
         } catch (error) {
             console.error('FRONTEND LOG: Fetch request failed.', error);
         }
-    };
+    }, [user]);
 
-    const updateBalance = (amount) => {
+    const updateBalance = useCallback((amount) => {
         setBalance(prev => {
             const newBalance = prev + amount;
             console.log(`FRONTEND LOG: Updating balance. New balance will be ${newBalance}.`);
             updateUserData({ balance: newBalance });
             return newBalance;
         });
-    };
+    }, [updateUserData]);
 
-    const updateSpins = (newSpins) => {
+    const updateSpins = useCallback((newSpins) => {
         console.log(`FRONTEND LOG: Updating spins. New spin count will be ${newSpins}.`);
         setSpins(newSpins);
         updateUserData({ spins: newSpins });
-    };
+    }, [updateUserData]);
 
     const tabs = {
         'spin': <DailySpin spins={spins} updateSpins={updateSpins} updateBalance={updateBalance} tg={tg} />,
