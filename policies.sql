@@ -7,27 +7,27 @@
 -- policies, especially if you were using Supabase's built-in user authentication.
 
 -- 1. Enable RLS on all tables (if not already enabled)
-ALTER TABLE public.Users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.GameProfiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.Tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.game_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 
 -- 2. Create policies to allow all actions for now.
 -- This allows the server (using the anon key) to read and write freely.
 -- We will drop any existing policies first to ensure a clean slate.
-DROP POLICY IF EXISTS "Enable all actions on Users" ON public.Users;
-CREATE POLICY "Enable all actions on Users"
-  ON public.Users FOR ALL
+DROP POLICY IF EXISTS "Enable all actions on users" ON public.users;
+CREATE POLICY "Enable all actions on users"
+  ON public.users FOR ALL
   USING (true)
   WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Enable all actions on GameProfiles" ON public.GameProfiles;
-CREATE POLICY "Enable all actions on GameProfiles"
-  ON public.GameProfiles FOR ALL
+DROP POLICY IF EXISTS "Enable all actions on game_profiles" ON public.game_profiles;
+CREATE POLICY "Enable all actions on game_profiles"
+  ON public.game_profiles FOR ALL
   USING (true)
   WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Enable all actions on Tasks" ON public.Tasks;
-CREATE POLICY "Enable all actions on Tasks"
-  ON public.Tasks FOR ALL
+DROP POLICY IF EXISTS "Enable all actions on tasks" ON public.tasks;
+CREATE POLICY "Enable all actions on tasks"
+  ON public.tasks FOR ALL
   USING (true)
   WITH CHECK (true);
