@@ -25,12 +25,12 @@ app.get('/api/user/:userId', async (req, res) => {
 
     // 1. Find the user by their Telegram ID, joining related tables
     const { data: existingUser, error: userError } = await supabase
-      .from('Users')
+      .from('users')
       .select(`
         *,
-        GameProfiles (
+        game_profiles (
           *,
-          Tasks ( * )
+          tasks ( * )
         )
       `)
       .eq('telegram_id', telegram_id)
@@ -41,8 +41,8 @@ app.get('/api/user/:userId', async (req, res) => {
     if (existingUser) {
         user = existingUser;
         // The result is an array because of the one-to-many relationship, so we take the first profile
-        gameProfile = user.GameProfiles[0];
-        tasks = gameProfile ? gameProfile.Tasks : [];
+        gameProfile = user.game_profiles[0];
+        tasks = gameProfile ? gameProfile.tasks : [];
         console.log(`Found existing user with Telegram ID: ${telegram_id}.`);
 
     } else {
@@ -51,7 +51,7 @@ app.get('/api/user/:userId', async (req, res) => {
 
         // 2. If user doesn't exist, create them
         const { data: newUser, error: newUserError } = await supabase
-            .from('Users')
+            .from('users')
             .insert({ telegram_id: telegram_id, full_name: 'Telegram User' })
             .select()
             .single();
@@ -61,7 +61,7 @@ app.get('/api/user/:userId', async (req, res) => {
 
         // 3. Create their game profile
         const { data: newProfile, error: newProfileError } = await supabase
-            .from('GameProfiles')
+            .from('game_profiles')
             .insert({ user_id: user.id })
             .select()
             .single();
@@ -76,7 +76,7 @@ app.get('/api/user/:userId', async (req, res) => {
             { profile_id: gameProfile.id, title: 'Spin the Wheel 3 Times', reward: 20 },
         ];
         const { data: newTasks, error: newTasksError } = await supabase
-            .from('Tasks')
+            .from('tasks')
             .insert(defaultTasks)
             .select();
 
@@ -123,8 +123,8 @@ app.patch('/api/user/:userId/profile', async (req, res) => {
     // 1. Find the user by their Telegram ID to get the associated GameProfile ID
     console.log(`[PATCH] Step 1: Finding user with telegram_id: ${telegram_id}`);
     const { data: user, error: userError } = await supabase
-      .from('Users')
-      .select('id, GameProfiles ( id )')
+      .from('users')
+      .select('id, game_profiles ( id )')
       .eq('telegram_id', telegram_id)
       .single();
 
@@ -138,7 +138,7 @@ app.patch('/api/user/:userId/profile', async (req, res) => {
     }
     console.log(`[PATCH] Found user with internal ID: ${user.id}`);
 
-    const gameProfileId = user.GameProfiles[0]?.id;
+    const gameProfileId = user.game_profiles[0]?.id;
     if (!gameProfileId) {
         console.log(`[PATCH] Error: No game profile found for user ID: ${user.id}`);
       return res.status(404).json({ error: 'Game profile not found for this user' });
@@ -157,9 +157,9 @@ app.patch('/api/user/:userId/profile', async (req, res) => {
     console.log('[PATCH] Step 2: Preparing updates:', updates);
 
     // 3. Update the specific row in the GameProfiles table
-    console.log(`[PATCH] Step 3: Updating GameProfiles table for id: ${gameProfileId}`);
+    console.log(`[PATCH] Step 3: Updating game_profiles table for id: ${gameProfileId}`);
     const { data: updatedProfile, error: updateError } = await supabase
-      .from('GameProfiles')
+      .from('game_profiles')
       .update(updates)
       .eq('id', gameProfileId)
       .select()
