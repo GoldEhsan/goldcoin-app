@@ -9,51 +9,53 @@ function App() {
 
   // ** این تابع اطلاعات را هنگام باز شدن برنامه از سرور می‌گیرد **
  // این کد را جایگزین useEffect فعلی خود کنید
- useEffect(() => {
+// این کد را جایگزین useEffect فعلی خود کنید
+useEffect(() => {
     const fetchUserData = async () => {
+      console.log("1. Starting user data fetch...");
       try {
-        // بررسی می‌کنیم که اسکریپت تلگرام بارگذاری شده باشد
         if (window.Telegram && window.Telegram.WebApp) {
+          console.log("2. Telegram WebApp object found.");
           const tg = window.Telegram.WebApp;
-          tg.ready(); // به تلگرام اطلاع می‌دهیم که برنامه آماده است
+          tg.ready();
           
           const currentUser = tg.initDataUnsafe?.user;
 
-          if (currentUser) {
-            // اگر کاربر شناسایی شد، اطلاعات پروفایل او را از سرور می‌گیریم
-            console.log("Fetching data for user:", currentUser.id); // برای دیباگ کردن
-            const response = await fetch(`/api/user-profile/${currentUser.id}`);
+          if (currentUser && currentUser.id) {
+            console.log("3. Found Telegram user:", currentUser);
             
+            const response = await fetch(`/api/user-profile/${currentUser.id}`);
+            console.log("4. API response received:", response.status);
+
             if (!response.ok) {
               throw new Error(`Server responded with status: ${response.status}`);
             }
 
             const data = await response.json();
+            console.log("5. Data from server:", data);
 
             if (data) {
-              // وضعیت برنامه را با اطلاعات دریافتی از دیتابیس آپدیت می‌کنیم
               setBalance(data.balance);
               setSpins(data.spins);
-              setUser(currentUser); // اطلاعات کاربر را ذخیره می‌کنیم
+              setUser(currentUser);
             }
           } else {
-            console.log("Could not find Telegram user data.");
-            setUser({ first_name: 'Guest' }); // اگر کاربر شناسایی نشد، مهمان نمایش بده
+            console.log("3b. Could not find Telegram user data inside WebApp object.");
+            setUser({ first_name: 'Guest' });
           }
         } else {
-          console.error("Telegram WebApp script not loaded.");
+          console.log("2b. Telegram WebApp script not found or not loaded.");
           setUser({ first_name: 'Guest' });
         }
       } catch (error) {
-        console.error("Failed to fetch user data:", error);
+        console.error("ERROR during fetchUserData:", error);
       } finally {
-        setLoading(false); // حالت لودینگ را تمام می‌کنیم
+        setLoading(false);
       }
     };
 
     fetchUserData();
-  }, []); // [] یعنی این کد فقط یک بار هنگام شروع برنامه اجرا می‌شود
-
+  }, []);
 
   // ** این تابع اطلاعات جدید را در سرور ذخیره می‌کند **
   const saveUserData = async (newBalance, newSpins) => {
