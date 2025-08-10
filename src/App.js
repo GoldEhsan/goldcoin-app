@@ -669,32 +669,44 @@ export default function App() {
         }
     }, [tg]); // This effect now correctly depends on the tg object
 
-    const updateUserData = useCallback(async (dataToUpdate) => {
-        if (!user?.id) return;
+    const updateUserData = async (dataToUpdate) => {
+        if (!user || !user.id) {
+            console.log("FRONTEND LOG: updateUserData called, but user is not available. Aborting.");
+            return;
+        }
 
+        console.log(`FRONTEND LOG: Preparing to save data for user ${user.id}. Data:`, dataToUpdate);
         try {
-            await fetch(`/api/user/${user.id}/profile`, {
+            const response = await fetch(`/api/user/${user.id}/profile`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToUpdate),
             });
-        } catch (error) {
-            console.error('Failed to save user data:', error);
-        }
-    }, [user]);
 
-    const updateBalance = useCallback((amount) => {
+            if (!response.ok) {
+                console.error('FRONTEND LOG: API responded with an error.', await response.text());
+            } else {
+                console.log('FRONTEND LOG: Successfully saved data.');
+            }
+        } catch (error) {
+            console.error('FRONTEND LOG: Fetch request failed.', error);
+        }
+    };
+
+    const updateBalance = (amount) => {
         setBalance(prev => {
             const newBalance = prev + amount;
+            console.log(`FRONTEND LOG: Updating balance. New balance will be ${newBalance}.`);
             updateUserData({ balance: newBalance });
             return newBalance;
         });
-    }, [updateUserData]);
+    };
 
-    const updateSpins = useCallback((newSpins) => {
+    const updateSpins = (newSpins) => {
+        console.log(`FRONTEND LOG: Updating spins. New spin count will be ${newSpins}.`);
         setSpins(newSpins);
         updateUserData({ spins: newSpins });
-    }, [updateUserData]);
+    };
 
     const tabs = {
         'spin': <DailySpin spins={spins} updateSpins={updateSpins} updateBalance={updateBalance} tg={tg} />,
