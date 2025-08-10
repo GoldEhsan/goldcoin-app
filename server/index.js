@@ -111,26 +111,39 @@ app.patch('/api/user/:userId/profile', async (req, res) => {
   const { userId: telegram_id } = req.params;
   const { balance, spins } = req.body;
 
+  console.log(`[PATCH] Received request for user: ${telegram_id}`);
+  console.log(`[PATCH] Request body:`, req.body);
+
   if (!telegram_id) {
+    console.log('[PATCH] Error: User ID is required.');
     return res.status(400).json({ error: 'User ID is required' });
   }
 
   try {
     // 1. Find the user by their Telegram ID to get the associated GameProfile ID
+    console.log(`[PATCH] Step 1: Finding user with telegram_id: ${telegram_id}`);
     const { data: user, error: userError } = await supabase
       .from('Users')
       .select('id, GameProfiles ( id )')
       .eq('telegram_id', telegram_id)
       .single();
 
-    if (userError || !user) {
+    if (userError) {
+        console.log('[PATCH] Supabase error while finding user:', userError);
+        throw userError;
+    }
+    if (!user) {
+      console.log('[PATCH] Error: User not found in database.');
       return res.status(404).json({ error: 'User not found' });
     }
+    console.log(`[PATCH] Found user with internal ID: ${user.id}`);
 
     const gameProfileId = user.GameProfiles[0]?.id;
     if (!gameProfileId) {
+        console.log(`[PATCH] Error: No game profile found for user ID: ${user.id}`);
       return res.status(404).json({ error: 'Game profile not found for this user' });
     }
+    console.log(`[PATCH] Found game profile with ID: ${gameProfileId}`);
 
     // 2. Create an object with only the fields to be updated
     const updates = {};
@@ -138,10 +151,13 @@ app.patch('/api/user/:userId/profile', async (req, res) => {
     if (spins !== undefined) updates.spins = spins;
 
     if (Object.keys(updates).length === 0) {
+        console.log('[PATCH] Error: No valid update data provided.');
       return res.status(400).json({ error: 'No update data provided' });
     }
+    console.log('[PATCH] Step 2: Preparing updates:', updates);
 
     // 3. Update the specific row in the GameProfiles table
+    console.log(`[PATCH] Step 3: Updating GameProfiles table for id: ${gameProfileId}`);
     const { data: updatedProfile, error: updateError } = await supabase
       .from('GameProfiles')
       .update(updates)
@@ -149,13 +165,16 @@ app.patch('/api/user/:userId/profile', async (req, res) => {
       .select()
       .single();
 
-    if (updateError) throw updateError;
+    if (updateError) {
+        console.log('[PATCH] Supabase error during update:', updateError);
+        throw updateError;
+    }
 
-    console.log(`Updated profile for user ${telegram_id}:`, updatedProfile);
+    console.log(`[PATCH] Successfully updated profile for user ${telegram_id}. Result:`, updatedProfile);
     res.status(200).json(updatedProfile);
 
   } catch (error) {
-    console.error(`Error updating profile for user ${telegram_id}:`, error);
+    console.error(`[PATCH] Final catch block error for user ${telegram_id}:`, error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

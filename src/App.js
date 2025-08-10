@@ -718,7 +718,7 @@ export default function App() {
                 <header className="bg-gray-800 rounded-xl p-3 mb-4 shadow-lg flex justify-between items-center">
                     <div>
                         <h1 className="text-xl font-bold text-yellow-400">GoldCoin</h1>
-                        <p className="text-xs text-gray-400 mt-1">Welcome, {user?.first_name || user?.id || 'Guest'}</p>
+                        <p className="text-xs text-gray-400 mt-1">Welcome, {`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Guest'}</p>
                     </div>
                     <div className="text-right">
                         <div className="flex items-center justify-end">
