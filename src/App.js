@@ -638,33 +638,36 @@ export default function App() {
     ]);
 
     useEffect(() => {
-        const telegramUser = window.Telegram?.WebApp?.initDataUnsafe?.user || { id: '123456789', first_name: 'Browser' };
-        setUser(telegramUser);
+        if (tg) {
+            const telegramUser = tg.initDataUnsafe?.user;
+            // Use a fallback user for testing in a regular browser
+            const finalUser = telegramUser && telegramUser.id ? telegramUser : { id: '123456789', first_name: 'Browser' };
+            setUser(finalUser);
 
-        const fetchUserData = async () => {
-            if (!telegramUser.id) return;
+            const fetchUserData = async () => {
+                if (!finalUser.id) return;
 
-            try {
-                const response = await fetch(`/api/user/${telegramUser.id}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                try {
+                    const response = await fetch(`/api/user/${finalUser.id}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    setBalance(data.balance);
+                    setSpins(data.spins);
+                    setIsVip(data.isVip);
+                    setTasks(data.tasks);
+                } catch (error) {
+                    console.error("Could not fetch user data:", error);
+                    // Fallback state in case of API error
+                    setBalance(0);
+                    setSpins(0);
                 }
-                const data = await response.json();
-                setBalance(data.balance);
-                setSpins(data.spins);
-                setIsVip(data.isVip);
-                // Now this will correctly update the state in the App component
-                setTasks(data.tasks);
-            } catch (error) {
-                console.error("Could not fetch user data:", error);
-                // Optionally, set some default state or show an error message
-                setBalance(500); // Default balance on error
-                setSpins(1);
-            }
-        };
+            };
 
-        fetchUserData();
-    }, []);
+            fetchUserData();
+        }
+    }, [tg]); // This effect now correctly depends on the tg object
 
     const updateUserData = useCallback(async (dataToUpdate) => {
         if (!user?.id) return;
