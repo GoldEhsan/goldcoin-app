@@ -17,11 +17,22 @@ const useTelegram = () => {
     const [tg, setTg] = useState(null);
 
     useEffect(() => {
-        if (window.Telegram && window.Telegram.WebApp) {
-            const telegramApp = window.Telegram.WebApp;
-            telegramApp.ready();
-            telegramApp.expand();
-            setTg(telegramApp);
+        console.log("FRONTEND LOG: useTelegram hook mounting...");
+        try {
+            if (window.Telegram && window.Telegram.WebApp) {
+                console.log("FRONTEND LOG: window.Telegram.WebApp found.");
+                const telegramApp = window.Telegram.WebApp;
+                telegramApp.ready();
+                console.log("FRONTEND LOG: Telegram.WebApp.ready() called.");
+                telegramApp.expand();
+                console.log("FRONTEND LOG: Telegram.WebApp.expand() called.");
+                setTg(telegramApp);
+                console.log("FRONTEND LOG: tg object set.");
+            } else {
+                console.log("FRONTEND LOG: window.Telegram.WebApp not found.");
+            }
+        } catch (error) {
+            console.error("FRONTEND LOG: Error in useTelegram hook:", error);
         }
     }, []);
 
