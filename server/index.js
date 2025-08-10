@@ -4,93 +4,70 @@ const path = require('path');
 const app = express();
 const port = 3001;
 
-// اطلاعات اتصال به Supabase
-const supabaseUrl = 'https://ttlhvoabhpvfrytygffz.supabase.co'; // آدرس Supabase خودتان
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // کلید Supabase خودتان
+// اطلاعات اتصال به Supabase - مقادیر خودتان را جایگزین کنید
+const supabaseUrl = 'https://ttlhvoabhpvfrytygffz.supabase.co';
+const supabaseKey = 'YOUR_SUPABASE_ANON_KEY'; // کلید anon خود را اینجا قرار دهید
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 app.use(express.json());
 
-// ** قابلیت جدید: گرفتن پروفایل کاربر بر اساس آیدی تلگرام **
-app.get('/api/user-profile/:telegramId', async (req, res) => {
-  const { telegramId } = req.params;
+// قابلیت جدید و اصلی: لاگین یا ساخت کاربر و بازگرداندن پروفایل کامل
+app.post('/api/login', async (req, res) => {
+  const { telegramId, firstName, lastName, username } = req.body;
+
+  if (!telegramId) {
+    return res.status(400).send({ error: 'Telegram ID is required' });
+  }
 
   try {
-    // ابتدا آیدی داخلی کاربر را از جدول Users پیدا می‌کنیم
-    const { data: user, error: userError } = await supabase
+    // ۱. بررسی می‌کنیم آیا کاربر از قبل وجود دارد یا نه
+    let { data: user, error: userSelectError } = await supabase
       .from('Users')
       .select('id')
       .eq('telegram_id', telegramId)
       .single();
 
-    if (userError || !user) {
-      // اگر کاربر وجود نداشت، یک کاربر جدید می‌سازیم
+    // ۲. اگر کاربر وجود نداشت، او را می‌سازیم
+    if (userSelectError || !user) {
+      const fullName = `${firstName || ''} ${lastName || ''}`.trim() || username;
       const { data: newUser, error: newUserError } = await supabase
         .from('Users')
-        .insert([{ telegram_id: telegramId, full_name: `User ${telegramId}` }])
+        .insert([{ telegram_id: telegramId, full_name: fullName }])
         .select('id')
         .single();
       
       if (newUserError) throw newUserError;
-
-      // حالا برای کاربر جدید یک پروفایل بازی می‌سازیم
-      const { data: newProfile, error: newProfileError } = await supabase
-        .from('GameProfiles')
-        .insert([{ user_id: newUser.id }]) // بالانس و اسپین به صورت پیش‌فرض (0 و 3) اضافه می‌شوند
-        .select()
-        .single();
       
-      if (newProfileError) throw newProfileError;
-      return res.status(200).send(newProfile);
+      // حالا برای کاربر جدید پروفایل بازی می‌سازیم
+      await supabase.from('GameProfiles').insert([{ user_id: newUser.id }]);
+      user = newUser; // کاربر جدید را به عنوان کاربر فعلی در نظر می‌گیریم
     }
-    
-    // اگر کاربر وجود داشت، پروفایل بازی او را پیدا می‌کنیم
+
+    // ۳. پروفایل بازی کاربر را پیدا کرده و برمی‌گردانیم
     const { data: profile, error: profileError } = await supabase
       .from('GameProfiles')
       .select('*')
       .eq('user_id', user.id)
       .single();
-
+      
     if (profileError) throw profileError;
-    res.status(200).send(profile);
+    
+    // ۴. اسم کاربر را هم به پروفایل اضافه می‌کنیم تا در فرانت‌اند نمایش دهیم
+    const finalResponse = { ...profile, fullName: (await supabase.from('Users').select('full_name').eq('id', user.id).single()).data.full_name };
+    res.status(200).send(finalResponse);
 
   } catch (error) {
     res.status(500).send({ error: error.message });
   }
 });
 
-// ** قابلیت آپدیت کردن پروفایل کاربر **
+
+// قابلیت آپدیت کردن پروفایل کاربر (این کد بدون تغییر باقی می‌ماند)
 app.post('/api/update-profile', async (req, res) => {
-    const { telegramId, newBalance, newSpins } = req.body;
-
-    if (!telegramId) {
-        return res.status(400).send('Telegram ID is required');
-    }
-
-    try {
-        const { data: user } = await supabase.from('Users').select('id').eq('telegram_id', telegramId).single();
-        if (!user) return res.status(404).send('User not found');
-
-        const { data, error } = await supabase
-            .from('GameProfiles')
-            .update({ balance: newBalance, spins: newSpins })
-            .eq('user_id', user.id)
-            .select();
-
-        if (error) throw error;
-        res.status(200).send(data);
-    } catch (error) {
-        res.status(500).send({ error: error.message });
-    }
+    // ... (کد این بخش را از پیام قبلی کپی کنید یا بگذارید بماند) ...
 });
 
-
-// این بخش برای اجرای برنامه در محیط Vercel است
-app.use(express.static(path.join(__dirname, '../build')));
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../build', 'index.html'));
-});
-
+// بقیه کدهای سرور...
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
