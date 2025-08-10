@@ -28,7 +28,7 @@ app.get('/api/user/:userId', async (req, res) => {
       .from('users')
       .select(`
         *,
-        game_profiles (
+        gameprofiles (
           *,
           tasks ( * )
         )
@@ -41,7 +41,7 @@ app.get('/api/user/:userId', async (req, res) => {
     if (existingUser) {
         user = existingUser;
         // The result is an array because of the one-to-many relationship, so we take the first profile
-        gameProfile = user.game_profiles[0];
+        gameProfile = user.gameprofiles[0];
         tasks = gameProfile ? gameProfile.tasks : [];
         console.log(`Found existing user with Telegram ID: ${telegram_id}.`);
 
@@ -61,7 +61,7 @@ app.get('/api/user/:userId', async (req, res) => {
 
         // 3. Create their game profile
         const { data: newProfile, error: newProfileError } = await supabase
-            .from('game_profiles')
+            .from('gameprofiles')
             .insert({ user_id: user.id })
             .select()
             .single();
@@ -124,7 +124,7 @@ app.patch('/api/user/:userId/profile', async (req, res) => {
     console.log(`[PATCH] Step 1: Finding user with telegram_id: ${telegram_id}`);
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('id, game_profiles ( id )')
+      .select('id, gameprofiles ( id )')
       .eq('telegram_id', telegram_id)
       .single();
 
@@ -138,7 +138,7 @@ app.patch('/api/user/:userId/profile', async (req, res) => {
     }
     console.log(`[PATCH] Found user with internal ID: ${user.id}`);
 
-    const gameProfileId = user.game_profiles[0]?.id;
+    const gameProfileId = user.gameprofiles[0]?.id;
     if (!gameProfileId) {
         console.log(`[PATCH] Error: No game profile found for user ID: ${user.id}`);
       return res.status(404).json({ error: 'Game profile not found for this user' });
@@ -157,9 +157,9 @@ app.patch('/api/user/:userId/profile', async (req, res) => {
     console.log('[PATCH] Step 2: Preparing updates:', updates);
 
     // 3. Update the specific row in the GameProfiles table
-    console.log(`[PATCH] Step 3: Updating game_profiles table for id: ${gameProfileId}`);
+    console.log(`[PATCH] Step 3: Updating gameprofiles table for id: ${gameProfileId}`);
     const { data: updatedProfile, error: updateError } = await supabase
-      .from('game_profiles')
+      .from('gameprofiles')
       .update(updates)
       .eq('id', gameProfileId)
       .select()
